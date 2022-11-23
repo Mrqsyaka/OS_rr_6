@@ -5,12 +5,7 @@
 
 using namespace std;
 
-
-
 // Бінарне дерево
-
-
-
 
 struct node
 {
@@ -192,24 +187,12 @@ void btree::preorder_print(node *leaf)
     }
 }
 
-
-
-
-
-
-
-
-
-
 // //Потік А формує спільний ресурс(1).Потік В звертається до цього спільного ресурсу для
 // //зчитування даних і виконує над ними перетворення(2).Потік С виводить результат перетворення у вікно
 // //програми.Усі потоки належать одному процесу.Захист спільного ресурсу виконати за допомогою
 // //м’ютекса.
 // //(1) - бінарне дерево дійсних чисел
 // //(2) - пошук входження елемента
-
-
-
 
 typedef struct _THREADARG
 { // Аргумент потоку
@@ -218,161 +201,90 @@ typedef struct _THREADARG
 
 } THREADARG, *PTHREADARG;
 
-static DWORD WINAPI ThFunc(PTHREADARG pThArg);
+static DWORD WINAPI B(PTHREADARG pThArg);
+static DWORD WINAPI C(PTHREADARG pThArg);
+static DWORD WINAPI A(PTHREADARG pThArg);
 
 static BOOL WINAPI Write(PTHREADARG pThArg);
 
 static HANDLE *ThreadHandle;
 
 HANDLE hMutex;
-
-
-
+HANDLE hMutex_2;
+HANDLE hMutex_3;
+HANDLE hMutex_4;
 
 // Спільний ресурс
 
 volatile DWORD M = 0;
- btree *tree = new btree();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+btree *tree = new btree();
+volatile bool exists;
+int ValueToFind;
 
 int main(int argc, TCHAR *argv[])
 
 {
-
+    ValueToFind = 10;
     //Дані для потоку
     DWORD NPr, ThId, iTh;
     PTHREADARG ThArg;
-    NPr = 1; // Кількість потоків
-
+    NPr = 3; // Кількість потоків
 
     // Масив аргументів потоків
     ThArg = new THREADARG[NPr];
 
-
     // Масив дескрипторів потоків
     ThreadHandle = new HANDLE[NPr];
 
-
     // Створюємо м’ютекс у вільному стані
     hMutex = CreateMutex(NULL, FALSE, NULL);
-
-
+    hMutex_2 = CreateMutex(NULL, FALSE, NULL);
     // Створити потоки (у призупиненому стані)
-    for (iTh = 0; iTh < NPr; iTh++)
-    {
-        ThArg[iTh].iTh = iTh;
-        ThreadHandle[iTh] = (HANDLE)_beginthreadex
-            (NULL,
-             0,
-             (unsigned int(__stdcall *)(void *))ThFunc,
-             &ThArg[iTh],
-             CREATE_SUSPENDED,
-             (unsigned int *)&ThId);
-    }
-
+    ThArg[iTh].iTh = iTh;
+    ThreadHandle[0] = (HANDLE)_beginthreadex(NULL,
+                                             0,
+                                             (unsigned int(__stdcall *)(void *))B,
+                                             &ThArg[iTh],
+                                             CREATE_SUSPENDED,
+                                             (unsigned int *)&ThId);
+    ThreadHandle[1] = (HANDLE)_beginthreadex(NULL,
+                                             0,
+                                             (unsigned int(__stdcall *)(void *))C,
+                                             &ThArg[iTh],
+                                             CREATE_SUSPENDED,
+                                             (unsigned int *)&ThId);
+    ThreadHandle[2] = (HANDLE)_beginthreadex(NULL,
+                                             0,
+                                             (unsigned int(__stdcall *)(void *))A,
+                                             &ThArg[iTh],
+                                             CREATE_SUSPENDED,
+                                             (unsigned int *)&ThId);
     // Запустити усі призупинені потоки
     for (iTh = 0; iTh < NPr; iTh++)
 
         ResumeThread(ThreadHandle[iTh]);
 
+
+
     // дочекатися завершення усіх потоків
     WaitForMultipleObjects(NPr, ThreadHandle, TRUE, INFINITE); // Без таймаута
-
+    Sleep(10000);
     CloseHandle(hMutex); // Закрити дескриптор
-
+    CloseHandle(hMutex_2);
+    CloseHandle(hMutex_3);
     // м’ютекса
 
     // Закрити дескриптори потоків
 
     for (iTh = 0; iTh < NPr; iTh++)
-
         CloseHandle(ThreadHandle[iTh]);
-
     delete[] ThArg;
-
     delete[] ThreadHandle;
-
-    return 0;
-
-}
-
-
-// функція потоків
-DWORD WINAPI ThFunc(PTHREADARG pThArg)
-
-{
-    WaitForSingleObject(hMutex,  INFINITE);
-    cout << "The mutex was released";
-    if (Write(pThArg)) // Якщо мютекс звільнився
-        // і поточний потік відпрацював,
-
-        // btree *tree = new btree();
-
-        // tree->postorder_print();
-        tree->preorder_print();
-    _endthreadex(0); // то завершити потік з
-    // кодом завершення 0
-
     return 0;
 }
-// функція роботи зі спільним ресурсом,
-// захищеним м’ютексом
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-BOOL WINAPI Write(PTHREADARG pThArg)
-
+DWORD WINAPI A(PTHREADARG pThArg)
 {
-
-    DWORD dwWaitResult;
-
-    // Чекаємо звільнення м’ютекса перед тим як
-
-    // звернутися до спільного ресурсу
-
-    dwWaitResult = WaitForSingleObject(hMutex,  5000L); // 5 секунд на таймаут або INFINITE
-    if (dwWaitResult == WAIT_TIMEOUT) // Таймаут.
-    // М’ютекс за цей час не звільнився
-    {
-        return FALSE;
-    }
-
-    else // М’ютекс звільнився, і наш потік його зайняв.
-
-    //Можна працювати.
     {
         tree->insert(10);
         tree->insert(6);
@@ -381,8 +293,38 @@ BOOL WINAPI Write(PTHREADARG pThArg)
         tree->insert(8);
         tree->insert(11);
         tree->insert(18);
-        ReleaseMutex(hMutex); // Звільняємо м’ютекс
+        ReleaseMutex(hMutex);
+    }
+    _endthreadex(0);
+}
+
+DWORD WINAPI B(PTHREADARG pThArg)
+{
+    WaitForSingleObject(hMutex, INFINITE);
+    WaitForSingleObject(hMutex_3, INFINITE);
+    if (tree->search(ValueToFind)->value)
+    {
+        exists = 1;
     }
 
-    return TRUE;
+    ReleaseMutex(hMutex_2);
+    _endthreadex(0);
+    return 0;
 }
+DWORD WINAPI C(PTHREADARG pThArg)
+{
+    WaitForSingleObject(hMutex_2, INFINITE);
+        // tree->preorder_print();
+        if (exists)
+        {
+            cout << "There is a value with such a value";
+        }
+        else
+        {
+            cout << "There is no value like " << ValueToFind;
+        }
+        ReleaseMutex(hMutex_4);
+        _endthreadex(0);
+    return 0;
+}
+

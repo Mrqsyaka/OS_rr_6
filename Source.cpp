@@ -224,7 +224,9 @@ int ValueToFind;
 int main(int argc, TCHAR *argv[])
 
 {
-    ValueToFind = 10;
+    cout << "\nEnter the value to find: ";
+    cin >> ValueToFind;
+    // ValueToFind = 10;
     //Дані для потоку
     DWORD NPr, ThId, iTh;
     PTHREADARG ThArg;
@@ -263,8 +265,6 @@ int main(int argc, TCHAR *argv[])
     for (iTh = 0; iTh < NPr; iTh++)
 
         ResumeThread(ThreadHandle[iTh]);
-
-
 
     // дочекатися завершення усіх потоків
     WaitForMultipleObjects(NPr, ThreadHandle, TRUE, INFINITE); // Без таймаута
@@ -314,17 +314,15 @@ DWORD WINAPI B(PTHREADARG pThArg)
 DWORD WINAPI C(PTHREADARG pThArg)
 {
     WaitForSingleObject(hMutex_2, INFINITE);
-        // tree->preorder_print();
-        if (exists)
-        {
-            cout << "There is a value with such a value";
-        }
-        else
-        {
-            cout << "There is no value like " << ValueToFind;
-        }
-        ReleaseMutex(hMutex_4);
-        _endthreadex(0);
+    if (exists)
+    {
+        cout << "\n\nThere is an element in binary tree with value " << ValueToFind;
+    }
+    else
+    {
+        cout << "\n\nThere is no value like " << ValueToFind;
+    }
+    ReleaseMutex(hMutex_4);
+    _endthreadex(0);
     return 0;
 }
-

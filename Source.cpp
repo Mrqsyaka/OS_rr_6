@@ -218,7 +218,7 @@ HANDLE hMutex_4;
 
 volatile DWORD M = 0;
 btree *tree = new btree();
-volatile bool exists;
+volatile bool exists = 0;
 int ValueToFind;
 
 int main(int argc, TCHAR *argv[])
@@ -241,6 +241,8 @@ int main(int argc, TCHAR *argv[])
     // Створюємо м’ютекс у вільному стані
     hMutex = CreateMutex(NULL, FALSE, NULL);
     hMutex_2 = CreateMutex(NULL, FALSE, NULL);
+    hMutex_4 = CreateMutex(NULL, FALSE, NULL);
+
     // Створити потоки (у призупиненому стані)
     ThArg[iTh].iTh = iTh;
     ThreadHandle[0] = (HANDLE)_beginthreadex(NULL,
@@ -268,6 +270,7 @@ int main(int argc, TCHAR *argv[])
 
     // дочекатися завершення усіх потоків
     Sleep(5000);
+    WaitForSingleObject(hMutex_4, INFINITE);
     WaitForMultipleObjects(NPr, ThreadHandle, TRUE, INFINITE); // Без таймаута
     CloseHandle(hMutex); // Закрити дескриптор
     CloseHandle(hMutex_2);
@@ -295,7 +298,7 @@ DWORD WINAPI A(PTHREADARG pThArg)
         tree->insert(18);
         ReleaseMutex(hMutex);
     }
-    _endthreadex(0);
+    return 0;
 }
 
 DWORD WINAPI B(PTHREADARG pThArg)
@@ -306,14 +309,16 @@ DWORD WINAPI B(PTHREADARG pThArg)
     {
         exists = 1;
     }
+    else
+    {
+        exists = 0;
+    }
 
     ReleaseMutex(hMutex_2);
-    _endthreadex(0);
     return 0;
 }
 DWORD WINAPI C(PTHREADARG pThArg)
 {
-    Sleep(500);
     WaitForSingleObject(hMutex_2, INFINITE);
     if (exists)
     {
@@ -324,6 +329,5 @@ DWORD WINAPI C(PTHREADARG pThArg)
         cout << "\n\nThere is no value like " << ValueToFind;
     }
     ReleaseMutex(hMutex_4);
-    _endthreadex(0);
     return 0;
 }

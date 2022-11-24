@@ -262,13 +262,13 @@ int main(int argc, TCHAR *argv[])
                                              CREATE_SUSPENDED,
                                              (unsigned int *)&ThId);
     // Запустити усі призупинені потоки
-    for (iTh = 0; iTh < NPr; iTh++)
-
-        ResumeThread(ThreadHandle[iTh]);
+    ResumeThread(ThreadHandle[2]);
+    ResumeThread(ThreadHandle[0]);
+    ResumeThread(ThreadHandle[1]);
 
     // дочекатися завершення усіх потоків
+    Sleep(5000);
     WaitForMultipleObjects(NPr, ThreadHandle, TRUE, INFINITE); // Без таймаута
-    Sleep(10000);
     CloseHandle(hMutex); // Закрити дескриптор
     CloseHandle(hMutex_2);
     CloseHandle(hMutex_3);
@@ -313,6 +313,7 @@ DWORD WINAPI B(PTHREADARG pThArg)
 }
 DWORD WINAPI C(PTHREADARG pThArg)
 {
+    Sleep(500);
     WaitForSingleObject(hMutex_2, INFINITE);
     if (exists)
     {
